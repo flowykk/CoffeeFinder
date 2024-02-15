@@ -131,6 +131,7 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
         let cell = tableView.dequeueReusableCell(withIdentifier: Constants.tableReuseId, for: indexPath)
         let coffeeShop = coffeeShops[indexPath.row]
         cell.textLabel?.text = coffeeShop.name
+        cell.textLabel?.textColor = .brown
         return cell
     }
     
@@ -168,13 +169,15 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
             )
             clusterView.image = resizedAndRoundedImage
             
-            let text = UILabel()
-            text.text = cluster.memberAnnotations.count < Constants.clusterAnnotationsMax ? 
+            let annotationsCountText = UILabel()
+            annotationsCountText.text = cluster.memberAnnotations.count < Constants.clusterAnnotationsMax ?
             "\(cluster.memberAnnotations.count)" :
             Constants.clusterAnnotationsMaxText
             
-            clusterView.addSubview(text)
-            text.pinCenter(to: clusterView)
+            annotationsCountText.textColor = .brown
+            
+            clusterView.addSubview(annotationsCountText)
+            annotationsCountText.pinCenter(to: clusterView)
             
             return clusterView
         } else {
