@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D41663D2B7E23150033656D /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D41663C2B7E23150033656D /* Constants.swift */; };
 		37ED749F2B6CF98B007065DC /* UIView+Pin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37ED749E2B6CF98B007065DC /* UIView+Pin.swift */; };
 		B890B5812B35E14000B3F761 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B890B5802B35E14000B3F761 /* AppDelegate.swift */; };
 		B890B5832B35E14000B3F761 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B890B5822B35E14000B3F761 /* SceneDelegate.swift */; };
@@ -17,6 +18,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0D41663C2B7E23150033656D /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		37ED749E2B6CF98B007065DC /* UIView+Pin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIView+Pin.swift"; sourceTree = "<group>"; };
 		B890B57D2B35E14000B3F761 /* CoffeeMap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CoffeeMap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B890B5802B35E14000B3F761 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -39,6 +41,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0D41663B2B7E22FE0033656D /* Constants */ = {
+			isa = PBXGroup;
+			children = (
+				0D41663C2B7E23150033656D /* Constants.swift */,
+			);
+			path = Constants;
+			sourceTree = "<group>";
+		};
 		37ED749A2B6CF732007065DC /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -94,6 +104,7 @@
 		B890B57F2B35E14000B3F761 /* CoffeeMap */ = {
 			isa = PBXGroup;
 			children = (
+				0D41663B2B7E22FE0033656D /* Constants */,
 				37ED749B2B6CF7E7007065DC /* VCs */,
 				37ED749C2B6CF80E007065DC /* Models */,
 				37ED749D2B6CF92A007065DC /* Extensions */,
@@ -177,6 +188,7 @@
 				B890B5812B35E14000B3F761 /* AppDelegate.swift in Sources */,
 				B890B5952B35F92200B3F761 /* CoffeeShopAnnotation.swift in Sources */,
 				B890B5832B35E14000B3F761 /* SceneDelegate.swift in Sources */,
+				0D41663D2B7E23150033656D /* Constants.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,21 +1,17 @@
-//
-//  CoffeeMapVC.swift
-//
 import UIKit
 import MapKit
 import CoreLocation
 
 class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataSource, UITableViewDelegate, MKMapViewDelegate
 {
-    var mapView: MKMapView! // Карта для показа местоположения и кофеен
-    var tableView: UITableView! // Таблица для отображения списка кофеен
-    let locationManager = CLLocationManager() // Менеджер геолокации
-    var coffeeShops: [MKMapItem] = [] // Массив для найденных кофеен
-    var currentRouteOverlays: [MKOverlay] = [] // Массив для маршрутов
-
+    private var mapView: MKMapView! // Карта для показа местоположения и кофеен
+    private var tableView: UITableView! // Таблица для отображения списка кофеен
+    private let locationManager = CLLocationManager() // Менеджер геолокации
+    private var coffeeShops: [MKMapItem] = [] // Массив для найденных кофеен
+    private var currentRouteOverlays: [MKOverlay] = [] // Массив для маршрутов
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-//        view.backgroundColor = .systemBackground
         setupMap()
         setupTableView()
         requestLocationAuthorization()
@@ -25,22 +21,21 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
     private func setupMap() {
         mapView = MKMapView()
         mapView.delegate = self
-        mapView.translatesAutoresizingMaskIntoConstraints = false
         
         view.addSubview(mapView)
         mapView.pinTop(to: view)
         mapView.pinHorizontal(to: view)
-        mapView.setHeight(UIScreen.main.bounds.height * 0.7)
+        mapView.setHeight(UIScreen.main.bounds.height * Constants.mapViewHeightMult)
         mapView.showsUserLocation = true
     }
     
     // MARK: - Настройка таблицы
     private func setupTableView() {
         tableView = UITableView()
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: Constants.tableReuseId)
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.translatesAutoresizingMaskIntoConstraints = false
+        
         view.addSubview(tableView)
         tableView.pinTop(to: mapView.bottomAnchor)
         tableView.pinHorizontal(to: view)
@@ -59,13 +54,12 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
     private func searchCoffeeShops(in region: MKCoordinateRegion) {
         // Формируем запрос
         let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = "coffee"
+        request.naturalLanguageQuery = Constants.requestText
         request.region = region
         let search = MKLocalSearch(request: request)
         
         search.start { [weak self] (response, error) in
             guard let self = self, let response = response else {
-                print("Error")
                 return
             }
             self.coffeeShops = response.mapItems // Сохранение результатов поиска
@@ -73,11 +67,14 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
 
             // Добавление аннотаций
             for item in response.mapItems {
-                let annotation = CoffeeShopAnnotation(title: item.name ?? "", coordinate: item.placemark.coordinate, info: "")
+                let annotation = CoffeeShopAnnotation(
+                    title: item.name ?? Constants.defaultText,
+                    coordinate: item.placemark.coordinate,
+                    info: Constants.defaultText
+                )
                 self.mapView.addAnnotation(annotation)
             }
         }
-//        mapView.showsUserLocation = false
     }
     
     // MARK: - Маршрут до выбранной кофейни
@@ -100,27 +97,28 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
         let directions = MKDirections(request: directionRequest)
         directions.calculate { [weak self] (response, error) in
             guard let self = self, let response = response else {
-                print("Error")
                 return
             }
 
-            let route = response.routes[0]
+            let route = response.routes[Constants.defaultRequestIndex]
             self.mapView.addOverlay(route.polyline, level: .aboveRoads)
             self.currentRouteOverlays.append(route.polyline)
 
-            // Настройка отображения маршрута на карте
-            let rect = route.polyline.boundingMapRect
-            self.mapView.setVisibleMapRect(rect, edgePadding: UIEdgeInsets(top: 40, left: 40, bottom: 40, right: 40), animated: true)
         }
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if let location = locations.first {
             let userLocation = location.coordinate
-            let regionRadius: CLLocationDistance = 1000
-            let region = MKCoordinateRegion(center: userLocation, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
+            let regionRadius: CLLocationDistance = Constants.searchLocationRadius
+            let region = MKCoordinateRegion(
+                center: userLocation,
+                latitudinalMeters: regionRadius,
+                longitudinalMeters: regionRadius
+            )
             mapView.setRegion(region, animated: true)
             searchCoffeeShops(in: region)
+            
             locationManager.stopUpdatingLocation()
         }
     }
@@ -130,7 +128,7 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: Constants.tableReuseId, for: indexPath)
         let coffeeShop = coffeeShops[indexPath.row]
         cell.textLabel?.text = coffeeShop.name
         return cell
@@ -145,7 +143,7 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
         if let polyline = overlay as? MKPolyline {
             let renderer = MKPolylineRenderer(polyline: polyline)
             renderer.strokeColor = UIColor.blue
-            renderer.lineWidth = 4.0
+            renderer.lineWidth = Constants.mapViewRendererLineWidth
             return renderer
         }
         return MKOverlayRenderer(overlay: overlay)
@@ -155,31 +153,47 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
         if annotation is MKUserLocation {
             return nil
         } else if let cluster = annotation as? MKClusterAnnotation {
-            let clusterView = MKAnnotationView(annotation: annotation, reuseIdentifier: "clusterView")
+            let clusterView = MKAnnotationView(annotation: annotation, reuseIdentifier: Constants.clusterReuseId)
             
             clusterView.annotation = cluster
             
-            let customImage = UIImage(named: "cluster")
-            let resizedAndRoundedImage = resizeImage(image: customImage!, targetSize: CGSize(width: 50, height: 50), backgroundColor: .clear)
+            let customImage = UIImage(named: Constants.clusterImageName)
+            let resizedAndRoundedImage = resizeImage(
+                image: customImage!,
+                targetSize: CGSize(
+                    width: Constants.clusterSize,
+                    height: Constants.clusterSize
+                ),
+                backgroundColor: .clear
+            )
             clusterView.image = resizedAndRoundedImage
             
             let text = UILabel()
-            text.text = cluster.memberAnnotations.count < 100 ? "\(cluster.memberAnnotations.count)" : "99+"
+            text.text = cluster.memberAnnotations.count < Constants.clusterAnnotationsMax ? 
+            "\(cluster.memberAnnotations.count)" :
+            Constants.clusterAnnotationsMaxText
             
             clusterView.addSubview(text)
             text.pinCenter(to: clusterView)
             
             return clusterView
         } else {
-            let annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "CoffeeShopAnnotation")
+            let annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: Constants.annotationReuseId)
             
             annotationView.annotation = annotation
             
-            let customImage = UIImage(named: "cup")
-            let resizedAndRoundedImage = resizeImage(image: customImage!, targetSize: CGSize(width: 35, height: 35), backgroundColor: .clear)
+            let customImage = UIImage(named: Constants.annotationImageName)
+            let resizedAndRoundedImage = resizeImage(
+                image: customImage!,
+                targetSize: CGSize(
+                    width: Constants.annotationSize,
+                    height: Constants.annotationSize
+                ),
+                backgroundColor: .clear
+            )
             annotationView.image = resizedAndRoundedImage
             
-            annotationView.clusteringIdentifier = "mapItemClustered"
+            annotationView.clusteringIdentifier = Constants.annotationClusteringId
             
             return annotationView
         }
@@ -195,9 +209,14 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
         } else {
             newSize = CGSize(width: size.width * widthRatio, height: size.height * widthRatio)
         }
-        let rect = CGRect(x: 0, y: 0, width: newSize.width, height: newSize.height)
+        let rect = CGRect(
+            x: Constants.defaultImageRectSize,
+            y: Constants.defaultImageRectSize,
+            width: newSize.width,
+            height: newSize.height
+        )
 
-        UIGraphicsBeginImageContextWithOptions(newSize, false, 0)
+        UIGraphicsBeginImageContextWithOptions(newSize, false, Constants.defaultImageRectSize)
         let context = UIGraphicsGetCurrentContext()!
         context.addEllipse(in: rect)
         context.clip()
