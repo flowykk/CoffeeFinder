@@ -10,6 +10,9 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
     private var coffeeShops: [MKMapItem] = [] // Массив для найденных кофеен
     private var currentRouteOverlays: [MKOverlay] = [] // Массив для маршрутов
     
+    var timer: Timer?
+    var currentDestination = MKMapItem()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupMap()
@@ -64,6 +67,8 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
             }
             self.coffeeShops = response.mapItems // Сохранение результатов поиска
             self.tableView.reloadData() // Обновление таблицы
+            
+            mapView.removeAnnotations(mapView.annotations)
 
             // Добавление аннотаций
             for item in response.mapItems {
@@ -83,6 +88,10 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
         mapView.removeOverlays(currentRouteOverlays)
         currentRouteOverlays.removeAll()
 
+        updateRoute(destination: destination)
+    }
+    
+    private func updateRoute(destination: MKMapItem) {
         guard let sourceCoordinate = locationManager.location?.coordinate else { return }
 
         let sourcePlacemark = MKPlacemark(coordinate: sourceCoordinate)
@@ -92,18 +101,20 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
         directionRequest.source = MKMapItem(placemark: sourcePlacemark)
         directionRequest.destination = MKMapItem(placemark: destinationPlacemark)
         directionRequest.transportType = .automobile
-
-        // Выполнение запроса на построение маршрута
+        
         let directions = MKDirections(request: directionRequest)
         directions.calculate { [weak self] (response, error) in
             guard let self = self, let response = response else {
+                print("Error")
                 return
             }
-
-            let route = response.routes[Constants.defaultRequestIndex]
+            
+            mapView.removeOverlays(currentRouteOverlays)
+            currentRouteOverlays.removeAll()
+            
+            let route = response.routes[0]
             self.mapView.addOverlay(route.polyline, level: .aboveRoads)
             self.currentRouteOverlays.append(route.polyline)
-
         }
     }
     
@@ -118,8 +129,10 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
             )
             mapView.setRegion(region, animated: true)
             searchCoffeeShops(in: region)
+         
+            //locationManager.stopUpdatingLocation()
             
-            locationManager.stopUpdatingLocation()
+            updateRouteByTimer(in: region)
         }
     }
 
@@ -137,7 +150,17 @@ class CoffeeMapVC: UIViewController, CLLocationManagerDelegate, UITableViewDataS
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let selectedCoffeeShop = coffeeShops[indexPath.row]
+        currentDestination = selectedCoffeeShop
         routeToCoffeeShop(destination: selectedCoffeeShop)
+    }
+    
+    private func updateRouteByTimer(in region: MKCoordinateRegion) {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: false) {
+            [weak self] _ in
+            self?.updateRoute(destination: self?.currentDestination ?? MKMapItem()
+            )
+        }
     }
 
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
